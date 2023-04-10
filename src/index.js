@@ -1,5 +1,6 @@
 import React, { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import 'toastr/build/toastr.css';
 
 import App from './App';
 

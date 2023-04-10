@@ -1,5 +1,6 @@
 import { React, useState } from 'react';
 import './style.css';
+import TaskDialog from './TaskDialog';
 import {
   AppBar,
   Toolbar,
@@ -32,6 +33,7 @@ import {
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment'
 import moment from 'moment';
+import toastr from 'toastr';
 
 //stores content of table rows
 const initRows = [
@@ -43,6 +45,13 @@ const initRows = [
   },
 ];
 
+toastr.options = {
+  positionClass: 'toast-bottom-right',
+  hideDuration: 300,
+  timeOut: 5000,
+  closeButton: true,
+};
+
 export default function App() {
   // Variables added to state
   const [rows, setRows] = useState(initRows)
@@ -53,7 +62,6 @@ export default function App() {
   const [deadline, setDeadline] = useState(null);
   const [priority, setPriority] = useState("low");
   const [isChecked, setIsChecked] = useState(false);
-  const [selectedRow, setSelectedRow] = useState(null);
   
   //For dialog box opening and closing
   const [open, setOpen] = useState(false);
@@ -67,15 +75,41 @@ export default function App() {
   //Handles opeining "Add" dialog box for table entry closing
   const handleClose = () => {
     setOpen(false);
+    setEditOpen(false);
     setTitleError(false);
     setDescriptionError(false);
     setTitle("");
     setDescription("");
-    setDeadline(null);
+    setDeadline(moment());
     setPriority("low");
   }
 
-  const handleEditOpen = () => {
+  const editEntry = () => {
+    // Find the index of the row that needs to be updated
+    const index = rows.findIndex((row) => row.title === title);
+
+    // Update the corresponding row in the rows array with the new values
+    rows[index] = {
+      ...rows[index],
+      description,
+      deadline,
+      priority,
+    };
+
+  // Update the state with the modified rows array
+  setRows([...rows]);
+
+  // Close the dialog box
+  toastr.success('Task was updated successfully');
+  handleClose();
+  }
+
+  const handleEditOpen = (title) => {
+    let editRow = rows.find((e) => e.title === title);
+    setTitle(editRow.title);
+    setDescription(editRow.description);
+    setDeadline(editRow.deadline);
+    setPriority(editRow.priority);
     setEditOpen(true);
   }
   
@@ -85,22 +119,35 @@ export default function App() {
   
   //handles "ADD" button in dialog box, verifies input
   const handleAddRow = () => {
+    let errorFlag = false;
+
     if (title.trim() === "") {
       setTitleError(true);
-      return;
+      errorFlag = true;
     }
     if (description.trim() === "") {
       setDescriptionError(true);
+      errorFlag = true;
+    }
+
+    if (errorFlag)
+      return;
+
+    //Title must be unique
+    if (rows.find((row) => row.title === title)) {
+      toastr.error("Title exists");
       return;
     }
+
     setRows([...rows, createData(title, description, deadline, priority, false)]);
-    console.log(rows);
+    toastr.success("Task was added successfully");
     handleClose();
   }
 
   //removes row from arr of row whose button was clicked
   const handleDelete = (title) => {
     setRows(rows.filter(row => row.title !== title));
+    toastr.success("Task was deleted successfully")
   }
 
   const handleIsCompleteChange = (title) => {
@@ -144,8 +191,24 @@ export default function App() {
       </AppBar>
 
       {/* Dialog box to enter items to table */}
-      <Dialog open={open} onClose={handleClose}>
-        {/* <DialogTitle><AddCircleIcon/>Add Task</DialogTitle> */}
+      <TaskDialog 
+        open={open} 
+        onClose={handleClose} 
+        title={title} 
+        setTitle={setTitle} 
+        titleError={titleError} 
+        setTitleError={setTitleError} 
+        description={description} 
+        setDescription={setDescription} 
+        descriptionError={descriptionError} 
+        setDescriptionError={setDescriptionError} 
+        deadline={deadline} 
+        setDeadline={setDeadline} 
+        priority={priority} 
+        setPriority={setPriority} 
+        handleAddRow={handleAddRow} />
+      {/* <Dialog open={open} onClose={handleClose}>
+
         <DialogTitle sx={{ padding: 0 }}>
           <Toolbar sx={{ backgroundColor: "primary.main", color: "primary.contrastText" }}>
             <AddCircleIcon/>
@@ -216,7 +279,7 @@ export default function App() {
             <Button variant="contained" color="error" onClick={handleClose} style={{ marginLeft: 8 }}><BlockIcon/>CANCEL</Button>
           </div>
         </DialogContent>
-      </Dialog>
+      </Dialog> */}
 
       {/* Dialog box to edit row content */}
       <Dialog open={editOpen} onClose={handleClose}>
@@ -230,12 +293,13 @@ export default function App() {
         </DialogTitle>
         <DialogContent sx={{ display: "flex", flexDirection: "column", alignItems: "center", justifyItems: "center" }}>
           <TextField
-            id="descriptionInput"
+            id="editDescriptionInput"
+            defaultValue={description}
             variant="outlined"
             label="Description"
             error={descriptionError}
             helperText={descriptionError ? "Description is Required!" : ""}
-            value={description}
+            
             onChange={(e) => setDescription(e.target.value)}
             onBlur={() => {
               if (description.trim() === "") {
@@ -247,7 +311,13 @@ export default function App() {
             style={{ width: "100%", marginTop: 24 }}
           />
           <LocalizationProvider dateAdapter={AdapterMoment}>
-            <DatePicker sx={{ marginTop: 3 }} />
+            <DatePicker
+              defaultValue={moment(deadline)}
+              value={deadline}
+              onChange={(newDate) => setDeadline(newDate)}
+              label="Deadline"
+              sx={{ marginTop: 3 }}
+            />
           </LocalizationProvider>
           <FormControl sx={{ marginTop: 3 }}>
             <FormLabel>Priority</FormLabel>
@@ -264,8 +334,8 @@ export default function App() {
             </RadioGroup>
           </FormControl>
           <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <Button variant="contained" color="primary" onClick={handleAddRow}><CreateIcon />EDIT</Button>
-            <Button variant="contained" color="error" onClick={() => setEditOpen(false)} style={{ marginLeft: 8 }}><BlockIcon />CANCEL</Button>
+            <Button variant="contained" color="primary" onClick={editEntry}><CreateIcon />EDIT</Button>
+            <Button variant="contained" color="error" onClick={handleClose} style={{ marginLeft: 8 }}><BlockIcon />CANCEL</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -299,6 +369,7 @@ export default function App() {
                   <div  style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center"}}>
                     {!rows.find((e) => e.title === row.title).isChecked && <Button 
                       variant="contained" 
+                      onClick={() => handleEditOpen(row.title)}
                       size="small" 
                       color="primary" 
                       sx={{ flex: "0 0 auto", display: "flex"}}
