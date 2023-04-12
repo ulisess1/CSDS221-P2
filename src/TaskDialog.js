@@ -18,8 +18,8 @@ import {
   Block as BlockIcon,
 } from '@mui/icons-material';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
-import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment'
-import moment from 'moment';
+import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
+import { FaRegEdit } from 'react-icons/fa'
 
 export default function TaskDialog(props) {
   const {
@@ -37,60 +37,60 @@ export default function TaskDialog(props) {
     setDeadline,
     priority,
     setPriority,
-    handleAddRow,
+    handleSubmit,
+    isEditBox,
+    determineError,
+    rowContains,
   } = props;
-
-  function handleChange(event) {
-    const name = event.target.name;
-    const value = event.target.value;
-
-    if (name === 'title') {
-      setTitle(value);
-      setTitleError(false);
-    } else if (name === 'description') {
-      setDescription(value);
-      setDescriptionError(false);
-    } else if (name === 'priority') {
-      setPriority(value);
-    }
-  }
-
 
   return (
     <Dialog open={open} onClose={handleClose}>
 
       <DialogTitle sx={{ padding: 0 }}>
-        <Toolbar sx={{ backgroundColor: "primary.main", color: "primary.contrastText" }}>
-          <AddCircleIcon />
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            Add Task
-          </Typography>
+        <Toolbar sx={{display: "flex", backgroundColor: "primary.main", color: "primary.contrastText"}}>
+          {(isEditBox) ?
+            <>
+              <FaRegEdit style={{marginBottom: "5px"}}/>
+              <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+                Edit Task
+              </Typography></> :
+            <>
+              <AddCircleIcon fontSize='small' />
+              <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+                Add Task
+              </Typography>
+            </>}
         </Toolbar>
       </DialogTitle>
-      <DialogContent sx={{ display: "flex", flexDirection: "column", alignItems: "center", justifyItems: "center" }}>
-        <TextField
+      <DialogContent sx={{ display: "flex", flexDirection: "column", }}>
+        { (!isEditBox) &&
+          <TextField
+          hidden={isEditBox}
           id="titleInput"
           variant="outlined"
           label="Title"
           error={titleError}
-          helperText={titleError ? "Title is Required!" : ""}
+          helperText={titleError ? determineError(): ""}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           onBlur={() => {
             if (title.trim() === "") {
+              setTitleError(true);
+            }
+            else if(rowContains(title.trim())) {
               setTitleError(true);
             } else {
               setTitleError(false);
             }
           }}
           style={{ width: "100%", marginTop: 12 }}
-        />
+        />}
         <TextField
           id="descriptionInput"
           variant="outlined"
           label="Description"
           error={descriptionError}
-          helperText={descriptionError ? "Description is Required!" : ""}
+          helperText={descriptionError ? "Description is Required!": ""}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           onBlur={() => {
@@ -124,9 +124,13 @@ export default function TaskDialog(props) {
             <FormControlLabel value="high" control={<Radio />} label="High" />
           </RadioGroup>
         </FormControl>
-        <div style={{ display: "flex", justifyContent: "flex-end" }}>
-          <Button variant="contained" color="primary" onClick={handleAddRow}><AddCircleIcon />ADD</Button>
-          <Button variant="contained" color="error" onClick={handleClose} style={{ marginLeft: 8 }}><BlockIcon />CANCEL</Button>
+        <div style={{width: "100%", display: "flex", justifyContent: "flex-end", paddingTop: "10%"}}>
+          { (isEditBox) ?
+            <Button variant="contained" color="primary" onClick={handleSubmit}><FaRegEdit style={{fontSize: "16px"}}/>EDIT</Button> 
+            :
+            <Button variant="contained" color="primary" onClick={handleSubmit}><AddCircleIcon />ADD</Button>
+            }
+          <Button variant="contained" color="error" onClick={handleClose} style={{ marginLeft: 8 }}><BlockIcon style={{fontSize: "16px"}}/>CANCEL</Button>
         </div>
       </DialogContent>
     </Dialog>

@@ -17,9 +17,9 @@ import {
 import {
   Menu as MenuIcon,
   AddCircle as AddCircleIcon,
-  Create as CreateIcon,
   Cancel as CancelIcon, 
 } from '@mui/icons-material';
+import { FaRegEdit } from 'react-icons/fa'
 import moment from 'moment';
 import toastr from 'toastr';
 
@@ -79,7 +79,8 @@ export default function App() {
 
     //Title must be unique
     if (rows.find((row) => row.title === title)) {
-      toastr.error("Title exists");
+      setTitleError(true);
+      //toastr.error("Title exists");//<-------- REMOVE
       return;
     }
 
@@ -135,6 +136,20 @@ export default function App() {
     }));
   }
 
+  function rowContains(title) {
+    if (rows.find((row) => row.title === title))
+      return true;
+    else
+      return false;
+  }
+
+  function errorMessage() {
+    if (rows.find((row) => row.title === title))
+      return "Title Must Be Unique!";
+    else
+      return "Title is Required!";
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
       {/* Banner at the top of page */}
@@ -178,7 +193,9 @@ export default function App() {
         setDeadline={setDeadline} 
         priority={priority} 
         setPriority={setPriority} 
-        handleSubmit={addEntry} />
+        handleSubmit={addEntry}
+        determineError={errorMessage}
+        rowContains={rowContains} />
 
       {/* Dialog box to edit row content */}
       <TaskDialog 
@@ -230,9 +247,9 @@ export default function App() {
                       color="primary" 
                       sx={{ flex: "0 0 auto", display: "flex"}}
                       >
-                      <CreateIcon />UPDATE
+                      <FaRegEdit style={{fontSize: "18px"}}/>UPDATE
                     </Button>}
-                    <Button variant="contained" size="small" color="error" sx={{ flex: "0 0 auto" }} onClick={() => handleDelete(row.title)}><CancelIcon />DELETE</Button>
+                    <Button variant="contained" size="small" color="error" sx={{ flex: "0 0 auto" }} onClick={() => handleDelete(row.title)}><CancelIcon style={{fontSize: "20px"}}/>DELETE</Button>
                   </div>
                 </TableCell>
               </TableRow>
